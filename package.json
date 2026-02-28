@@ -7,7 +7,7 @@
     "pi-missions": "src/index.ts"
   },
   "scripts": {
-    "check": "tsc --noEmit 2>&1 | grep -v 'node_modules/' || true",
+    "check": "! (tsc --noEmit 2>&1 | grep -v 'node_modules/' | grep .)",
     "lint": "biome check src/ tests/",
     "lint:fix": "biome check --write src/ tests/",
     "build": "bun build src/index.ts --outdir dist --target bun",
