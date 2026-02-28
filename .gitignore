@@ -1,0 +1,5 @@
+node_modules/
+dist/
+*.tmp
+.pi-missions/credentials.json
+.DS_Store

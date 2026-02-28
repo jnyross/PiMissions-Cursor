@@ -1,0 +1,29 @@
+{
+  "name": "pi-missions",
+  "version": "0.1.0",
+  "description": "Autonomous code development orchestrator built on oh-my-pi",
+  "type": "module",
+  "bin": {
+    "pi-missions": "src/index.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit 2>&1 | grep -v 'node_modules/' || true",
+    "lint": "biome check src/ tests/",
+    "lint:fix": "biome check --write src/ tests/",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "test": "bun test --timeout 120000",
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "@oh-my-pi/pi-coding-agent": "^13.3.13"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
+    "@types/bun": "^1.2.0",
+    "typescript": "^5.7.0"
+  },
+  "trustedDependencies": [
+    "@biomejs/biome",
+    "protobufjs"
+  ]
+}
