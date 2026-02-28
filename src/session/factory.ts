@@ -1,3 +1,4 @@
+import type { ThinkingLevel } from "@oh-my-pi/pi-agent-core";
 import type { Model } from "@oh-my-pi/pi-ai";
 import {
 	type CustomTool,
@@ -8,6 +9,8 @@ import {
 } from "@oh-my-pi/pi-coding-agent";
 import { HandoffResultSchema } from "../types/index.js";
 
+export type { ThinkingLevel };
+
 export interface WorkerSessionConfig {
 	cwd?: string;
 	agentDir?: string;
@@ -15,6 +18,7 @@ export interface WorkerSessionConfig {
 	toolNames?: string[];
 	model?: Model;
 	defaultModel?: string;
+	thinkingLevel?: ThinkingLevel;
 }
 
 export interface OrchestratorSessionConfig {
@@ -26,6 +30,7 @@ export interface OrchestratorSessionConfig {
 	customTools?: CustomTool[];
 	model?: Model;
 	defaultModel?: string;
+	thinkingLevel?: ThinkingLevel;
 	resume?: boolean;
 }
 
@@ -34,9 +39,15 @@ interface SharedSessionContext {
 	modelRegistry: ModelRegistry;
 }
 
-let sharedSessionContext: Promise<SharedSessionContext> | null = null;
+const sharedSessionContextMap = new Map<string, Promise<SharedSessionContext>>();
+
+function getAgentDirKey(agentDir?: string): string {
+	return agentDir ?? "__default__";
+}
 
 async function getSharedSessionContext(agentDir?: string): Promise<SharedSessionContext> {
+	const key = getAgentDirKey(agentDir);
+	let sharedSessionContext = sharedSessionContextMap.get(key);
 	if (!sharedSessionContext) {
 		const promise = (async () => {
 			const authStorage = await discoverAuthStorage(agentDir);
@@ -44,12 +55,13 @@ async function getSharedSessionContext(agentDir?: string): Promise<SharedSession
 			await modelRegistry.refresh();
 			return { authStorage, modelRegistry };
 		})();
-		sharedSessionContext = promise;
+		sharedSessionContextMap.set(key, promise);
 		promise.catch(() => {
-			if (sharedSessionContext === promise) {
-				sharedSessionContext = null;
+			if (sharedSessionContextMap.get(key) === promise) {
+				sharedSessionContextMap.delete(key);
 			}
 		});
+		sharedSessionContext = promise;
 	}
 	return sharedSessionContext;
 }
@@ -103,6 +115,7 @@ export async function createWorkerSession(config: WorkerSessionConfig) {
 		authStorage,
 		modelRegistry,
 		model,
+		thinkingLevel: config.thinkingLevel,
 		sessionManager: SessionManager.inMemory(),
 		systemPrompt: config.systemPrompt,
 		toolNames: config.toolNames ?? ["read", "write", "edit", "bash", "grep", "find", "ls"],
@@ -127,6 +140,7 @@ export async function createOrchestratorSession(config: OrchestratorSessionConfi
 		authStorage,
 		modelRegistry,
 		model,
+		thinkingLevel: config.thinkingLevel,
 		sessionManager,
 		systemPrompt: config.systemPrompt,
 		toolNames: config.toolNames ?? ["read", "write", "edit", "bash", "grep", "find", "ls"],
@@ -138,5 +152,5 @@ export async function createOrchestratorSession(config: OrchestratorSessionConfi
 }
 
 export function resetSessionFactoryForTests(): void {
-	sharedSessionContext = null;
+	sharedSessionContextMap.clear();
 }

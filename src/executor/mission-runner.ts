@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events";
+import type { ThinkingLevel } from "../session/index.js";
 import {
 	getNextPendingFeature,
 	isMilestoneComplete,
@@ -28,6 +29,7 @@ export interface MissionRunnerDependencies {
 export interface MissionRunnerOptions {
 	targetDir?: string;
 	defaultModel?: string;
+	thinkingLevel?: ThinkingLevel;
 	sealedMilestones?: Iterable<string>;
 }
 
@@ -76,6 +78,7 @@ export class MissionRunner extends EventEmitter {
 						missionDir,
 						targetDir: options.targetDir,
 						defaultModel: options.defaultModel,
+						thinkingLevel: options.thinkingLevel,
 					});
 				} catch (error) {
 					lastError = error as Error;

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { SetupWizard, loadConfig } from "./config/index.js";
 import { MissionRunner } from "./executor/index.js";
 import { type MissionPlanInput, discoverInfrastructure, generateMissionArtifacts } from "./planner/index.js";
+import type { ThinkingLevel } from "./session/index.js";
 import { getNextMilestone, readFeatures, readValidationState, writeMissionState } from "./state/index.js";
 import { gitInit, isGitRepo } from "./utils/index.js";
 
@@ -129,7 +130,11 @@ async function cmdResume(cwd: string): Promise<void> {
 	}
 
 	const runner = new MissionRunner();
-	await runner.run(config.missionDir, { targetDir: cwd, defaultModel: config.defaultModel });
+	await runner.run(config.missionDir, {
+		targetDir: cwd,
+		defaultModel: config.defaultModel,
+		thinkingLevel: config.defaultThinkingLevel as ThinkingLevel,
+	});
 	process.stdout.write("Mission execution completed.\n");
 }
 

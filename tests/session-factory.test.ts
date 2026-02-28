@@ -7,12 +7,14 @@ import {
 	buildWorkerPrompt,
 	createOrchestratorSession,
 	createWorkerSession,
+	resetSessionFactoryForTests,
 } from "../src/session/index.js";
 import type { Feature } from "../src/types/index.js";
 
 const tempDirs: string[] = [];
 
 afterEach(async () => {
+	resetSessionFactoryForTests();
 	for (const dir of tempDirs.splice(0, tempDirs.length)) {
 		await rm(dir, { recursive: true, force: true });
 	}

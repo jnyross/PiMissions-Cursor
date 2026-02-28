@@ -1,5 +1,5 @@
 import { mkdir, rename, unlink, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname } from "node:path";
 
 function createTempPath(targetPath: string): string {
 	const random = Math.random().toString(36).slice(2, 8);
@@ -17,8 +17,4 @@ export async function atomicWriteFile(path: string, content: string): Promise<vo
 		await unlink(tempPath).catch(() => undefined);
 		throw error;
 	}
-}
-
-export function resolveMissionFilePath(missionDir: string, fileName: string): string {
-	return join(missionDir, fileName);
 }
