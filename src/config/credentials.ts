@@ -149,12 +149,14 @@ async function defaultValidateApiKey(provider: string, apiKey: string): Promise<
 			systemPrompt: "You are a validator. Reply with exactly hello.",
 		});
 
+		let timerId: ReturnType<typeof setTimeout> | undefined;
 		try {
 			const timeoutPromise = new Promise<never>((_resolve, reject) => {
-				setTimeout(() => reject(new Error("Validation call timed out.")), 20_000);
+				timerId = setTimeout(() => reject(new Error("Validation call timed out.")), 20_000);
 			});
 			await Promise.race([session.prompt("Reply with exactly: hello"), timeoutPromise]);
 		} finally {
+			clearTimeout(timerId);
 			await session.dispose();
 		}
 

@@ -84,7 +84,12 @@ function shouldRetestAssertion(
 	if (!options.rerun) {
 		return true;
 	}
-	return existingStatus === "failed" || existingStatus === "blocked";
+	return (
+		existingStatus === "failed" ||
+		existingStatus === "blocked" ||
+		existingStatus === "pending" ||
+		existingStatus === undefined
+	);
 }
 
 export class UserTestingValidator {

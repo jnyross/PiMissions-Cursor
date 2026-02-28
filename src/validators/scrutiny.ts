@@ -1,5 +1,5 @@
 import { mkdir } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { readFeatures, readServicesYaml } from "../state/index.js";
 import { atomicWriteFile } from "../state/index.js";
 import type { Feature } from "../types/index.js";
@@ -29,6 +29,7 @@ export interface ScrutinyValidatorOptions {
 	runCommand?: (command: string, cwd: string) => Promise<ScrutinyCommandResult>;
 	reviewFeature?: (feature: Feature, missionDir: string) => Promise<ScrutinyReviewFinding[]>;
 	reportRoot?: string;
+	targetDir?: string;
 }
 
 async function defaultRunCommand(command: string, cwd: string): Promise<ScrutinyCommandResult> {
@@ -58,11 +59,13 @@ export class ScrutinyValidator {
 	#runCommand: (command: string, cwd: string) => Promise<ScrutinyCommandResult>;
 	#reviewFeature: (feature: Feature, missionDir: string) => Promise<ScrutinyReviewFinding[]>;
 	#reportRoot?: string;
+	#targetDir?: string;
 
 	constructor(options: ScrutinyValidatorOptions = {}) {
 		this.#runCommand = options.runCommand ?? defaultRunCommand;
 		this.#reviewFeature = options.reviewFeature ?? defaultReviewFeature;
 		this.#reportRoot = options.reportRoot;
+		this.#targetDir = options.targetDir;
 	}
 
 	async validate(milestone: string, missionDir: string): Promise<ScrutinyValidationResult> {
@@ -73,9 +76,10 @@ export class ScrutinyValidator {
 			services.commands.typecheck ?? services.commands.check ?? "bun run check",
 		];
 
+		const targetDir = this.#targetDir ?? dirname(missionDir);
 		const commandResults: ScrutinyCommandResult[] = [];
 		for (const command of commands) {
-			const result = await this.#runCommand(command, missionDir);
+			const result = await this.#runCommand(command, targetDir);
 			commandResults.push(result);
 		}
 
