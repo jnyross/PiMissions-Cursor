@@ -8,7 +8,7 @@ export interface RunningService {
 
 export interface DiscoveryResult {
 	runningServices: RunningService[];
-	availablePorts: number[];
+	usedPorts: number[];
 	projectFiles: string[];
 	availableTools: Record<string, boolean>;
 }
@@ -99,11 +99,11 @@ function detectAvailableTools(toolNames: string[]): Record<string, boolean> {
 export async function discoverInfrastructure(targetDir: string): Promise<DiscoveryResult> {
 	const lsofResult = runCommand("bash", ["-lc", "lsof -i -P -n | grep LISTEN || true"]);
 	const listeners = parseListeningPorts(lsofResult.stdout);
-	const availablePorts = Array.from(new Set(listeners.map((listener) => listener.port))).sort((a, b) => a - b);
+	const usedPorts = Array.from(new Set(listeners.map((listener) => listener.port))).sort((a, b) => a - b);
 
 	return {
 		runningServices: detectRunningServices(listeners),
-		availablePorts,
+		usedPorts,
 		projectFiles: await listProjectFiles(targetDir),
 		availableTools: detectAvailableTools(["git", "bun", "node", "npm", "docker", "python3"]),
 	};

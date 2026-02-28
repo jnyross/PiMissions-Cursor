@@ -102,8 +102,8 @@ async function cmdNew(positionals: string[], cwd: string): Promise<void> {
 	await mkdir(missionDir, { recursive: true });
 	const discovery = await discoverInfrastructure(cwd);
 	const plan = buildDefaultPlan(missionTitle);
-	if (discovery.availablePorts.length > 0) {
-		plan.description += ` Detected in-use ports: ${discovery.availablePorts.join(", ")}.`;
+	if (discovery.usedPorts.length > 0) {
+		plan.description += ` Detected in-use ports: ${discovery.usedPorts.join(", ")}.`;
 	}
 
 	await generateMissionArtifacts(plan, cwd, missionDir);

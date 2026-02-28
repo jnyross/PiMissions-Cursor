@@ -21,7 +21,7 @@ describe("infrastructure discovery", () => {
 		const result = await discoverInfrastructure(project);
 		expect(result.projectFiles).toContain("README.md");
 		expect(typeof result.availableTools.git).toBe("boolean");
-		expect(Array.isArray(result.availablePorts)).toBeTrue();
+		expect(Array.isArray(result.usedPorts)).toBeTrue();
 		expect(Array.isArray(result.runningServices)).toBeTrue();
 	});
 

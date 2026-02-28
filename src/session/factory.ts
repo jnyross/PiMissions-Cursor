@@ -38,12 +38,18 @@ let sharedSessionContext: Promise<SharedSessionContext> | null = null;
 
 async function getSharedSessionContext(agentDir?: string): Promise<SharedSessionContext> {
 	if (!sharedSessionContext) {
-		sharedSessionContext = (async () => {
+		const promise = (async () => {
 			const authStorage = await discoverAuthStorage(agentDir);
 			const modelRegistry = new ModelRegistry(authStorage);
 			await modelRegistry.refresh();
 			return { authStorage, modelRegistry };
 		})();
+		sharedSessionContext = promise;
+		promise.catch(() => {
+			if (sharedSessionContext === promise) {
+				sharedSessionContext = null;
+			}
+		});
 	}
 	return sharedSessionContext;
 }

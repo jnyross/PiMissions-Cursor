@@ -85,7 +85,7 @@ function buildPlannerSystemPrompt(discovery?: DiscoveryResult): string {
 		? [
 				"## Discovery Snapshot",
 				`- Running services: ${discovery.runningServices.map((service) => service.name).join(", ") || "none"}`,
-				`- Used ports: ${discovery.availablePorts.join(", ") || "none"}`,
+				`- Used ports: ${discovery.usedPorts.join(", ") || "none"}`,
 				`- Top-level files: ${discovery.projectFiles.join(", ") || "none"}`,
 			].join("\n")
 		: "## Discovery Snapshot\n- Not yet collected.";

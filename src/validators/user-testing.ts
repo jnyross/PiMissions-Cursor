@@ -31,23 +31,36 @@ function parseValidationContractMarkdown(content: string): ValidationAssertion[]
 	const lines = content.split("\n");
 	const assertions: ValidationAssertion[] = [];
 	let currentArea = "General";
+	let currentAssertion: ValidationAssertion | null = null;
 
 	for (const line of lines) {
 		const areaMatch = line.match(/^##\s+Area:\s+(.+)$/);
 		if (areaMatch?.[1]) {
 			currentArea = areaMatch[1].trim();
+			currentAssertion = null;
 			continue;
 		}
 
 		const assertionMatch = line.match(/^###\s+([A-Z0-9-]+):\s+(.+)$/);
 		if (assertionMatch?.[1] && assertionMatch[2]) {
-			assertions.push({
+			currentAssertion = {
 				id: assertionMatch[1],
 				title: assertionMatch[2],
 				description: "",
 				evidence: "",
 				area: currentArea,
-			});
+			};
+			assertions.push(currentAssertion);
+			continue;
+		}
+
+		if (currentAssertion) {
+			const evidenceMatch = line.match(/^Evidence:\s*(.*)$/);
+			if (evidenceMatch) {
+				currentAssertion.evidence = evidenceMatch[1] ?? "";
+			} else if (line.trim() && !currentAssertion.description) {
+				currentAssertion.description = line.trim();
+			}
 		}
 	}
 
@@ -118,7 +131,7 @@ export class UserTestingValidator {
 		}
 
 		const hasFailure = results.some((result) => result.status === "failed");
-		const reportRoot = this.#reportRoot ?? join(missionDir, ".pi-missions", "validation");
+		const reportRoot = this.#reportRoot ?? join(missionDir, "validation");
 		const reportDir = join(reportRoot, milestone, "user-testing");
 		await mkdir(reportDir, { recursive: true });
 		const reportPath = join(reportDir, "synthesis.json");
