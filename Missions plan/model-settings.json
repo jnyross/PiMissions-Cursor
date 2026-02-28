@@ -1,0 +1,6 @@
+{
+  "workerModel": "custom:gpt-5.3-codex-spark-thinking-32000-(Local)-10",
+  "workerReasoningEffort": "none",
+  "validationWorkerModel": "custom:gpt-5.3-codex-thinking-32000-(Local)-5",
+  "validationWorkerReasoningEffort": "none"
+}

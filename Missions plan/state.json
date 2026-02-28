@@ -1,0 +1,41 @@
+{
+  "missionId": "mis_0105e13c",
+  "baseSessionId": "42e5096f-7c44-4d21-a6fd-5fd7409ac66c",
+  "state": "running",
+  "workingDirectory": "/Users/johnross/Documents/Software_Projects/Pi Missions",
+  "currentFeatureId": "scrutiny-validator-foundation",
+  "currentWorkerSessionId": "a9f3953c-00ea-4929-b4a6-b521392b32f1",
+  "currentWorkerPid": null,
+  "workerSessionIds": [
+    "5b22f9d8-0b6b-48ec-b853-3d378e5c7ef6",
+    "54d94cc4-def2-483b-9ac5-062b8f0a0914",
+    "27526ad5-c696-480d-8f17-8c66aff77256",
+    "b52a0129-5828-4838-9472-391184e5afe5",
+    "99cb211a-f692-434a-ad7a-b2a53b6e8384",
+    "7b84a8ac-c0b1-4e1c-856b-99ad31731cb6",
+    "62f4ef51-d5b2-4a0c-9ae8-e6bd8b8ba140",
+    "1dbd9864-468a-4150-9889-febe0d951f7b",
+    "43f18a2b-f319-407c-8003-64f228437924",
+    "0d69990f-dc55-4e9f-a749-31851a2f8313",
+    "420d13c3-df43-4fd3-bcce-554892b7b309",
+    "b666f93d-c1fa-4371-805c-b7c13e606e72",
+    "7fe365c8-a160-472d-b8d0-b454609d1606",
+    "aab0e450-8688-45c8-8923-f0258e08bd3f",
+    "56543ecc-3cb4-46a1-bac2-e98ed359b76a",
+    "ce2356d1-2369-4a3b-bddc-9d14eac8f3ce",
+    "e980d3f7-30f5-4cce-beba-54501d7255e4",
+    "d88bdd05-1206-4d7f-99ec-49e572760339",
+    "d5371a4f-d5e9-4037-88eb-e80667856b59",
+    "a9f3953c-00ea-4929-b4a6-b521392b32f1"
+  ],
+  "completedFeatures": 2,
+  "totalFeatures": 31,
+  "createdAt": "2026-02-28T09:22:23.478Z",
+  "updatedAt": "2026-02-28T15:53:42.823Z",
+  "concurrentRunWarningAcknowledged": true,
+  "orchestratorActedSinceReturn": true,
+  "lastReviewedHandoffCount": 4,
+  "milestonesWithValidationPlanned": [
+    "foundation"
+  ]
+}
