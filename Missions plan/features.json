@@ -1,0 +1,971 @@
+{
+  "features": [
+    {
+      "id": "scrutiny-validator-foundation",
+      "description": "Scrutiny validation for milestone \"foundation\". Runs test suite, typecheck, and lint. Spawns review subagents for each completed feature. Synthesizes findings. Always returns to orchestrator.",
+      "skillName": "scrutiny-validator",
+      "preconditions": [
+        "All implementation features for milestone \"foundation\" are complete"
+      ],
+      "expectedBehavior": [
+        "Validators pass (test, typecheck, lint)",
+        "Review subagents spawned for each feature",
+        "Findings synthesized into scrutiny report"
+      ],
+      "verificationSteps": [],
+      "milestone": "foundation",
+      "status": "in_progress",
+      "workerSessionIds": [
+        "420d13c3-df43-4fd3-bcce-554892b7b309",
+        "d88bdd05-1206-4d7f-99ec-49e572760339",
+        "a9f3953c-00ea-4929-b4a6-b521392b32f1"
+      ],
+      "currentWorkerSessionId": "a9f3953c-00ea-4929-b4a6-b521392b32f1",
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "user-testing-validator-foundation",
+      "description": "User testing validation for milestone \"foundation\". Determines testable assertions from features' fulfills field, sets up environment, spawns flow validator subagents, synthesizes results. Always returns to orchestrator.",
+      "skillName": "user-testing-validator",
+      "preconditions": [
+        "All implementation features for milestone \"foundation\" are complete"
+      ],
+      "expectedBehavior": [
+        "Testable assertions determined from fulfills mapping",
+        "Environment set up (services started, data seeded)",
+        "Flow validator subagents spawned and completed",
+        "Results synthesized, validation-state.json updated"
+      ],
+      "verificationSteps": [],
+      "milestone": "foundation",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "planning-orchestrator",
+      "description": "Implement the planning orchestrator in src/planner/orchestrator.ts. This is an agent session (via createOrchestratorSession) that converses with the user to plan a mission. The system prompt instructs the agent to: (1) greet the user and ask what they want to build, (2) ask clarifying questions about requirements, constraints, and technology preferences (at least 2 questions about different aspects), (3) propose milestones as vertical slices and ask for confirmation, (4) discover infrastructure (delegate to discovery.ts). Create custom tools for the orchestrator: askUserQuestion (presents a question and waits for response), proposeMilestones (displays milestones and gets confirmation), confirmPlan (final plan approval). The orchestrator session is persistent (saved to mission dir) so it can be resumed.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "session-factory is complete",
+        "config-system is complete"
+      ],
+      "expectedBehavior": [
+        "Orchestrator greets user and asks about goals on first prompt",
+        "Orchestrator asks at least 2 clarifying questions about different aspects",
+        "Orchestrator proposes milestones and waits for user confirmation",
+        "Custom tools (askUserQuestion, proposeMilestones, confirmPlan) are registered and functional",
+        "Session is persistent and can be resumed"
+      ],
+      "verificationSteps": [
+        "bun test tests/planning-orchestrator.test.ts",
+        "Manual: run the orchestrator and verify it asks questions and proposes milestones",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-PLAN-001",
+        "VAL-PLAN-002",
+        "VAL-PLAN-003"
+      ],
+      "milestone": "planner",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "infrastructure-discovery",
+      "description": "Implement infrastructure discovery in src/planner/discovery.ts. Create discoverInfrastructure() that: (1) scans listening ports via 'lsof -i -P -n | grep LISTEN', (2) checks for common services (postgres, redis, docker, node, python), (3) lists project files/directories in the target directory, (4) checks available tools (git, bun, node, npm, docker). Returns a structured DiscoveryResult with runningServices, availablePorts, projectFiles, and availableTools. Also create suggestPorts(usedPorts, count) that suggests available ports in a given range. This is called by the planning orchestrator during the infrastructure phase.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "core-types is complete"
+      ],
+      "expectedBehavior": [
+        "Discovers running services on the machine",
+        "Reports which ports are in use",
+        "Lists project files in the target directory",
+        "Checks for available development tools",
+        "suggestPorts returns ports that are not in use",
+        "Handles permission errors gracefully (some ports may not be readable)",
+        "Returns empty results when nothing is found (not errors)"
+      ],
+      "verificationSteps": [
+        "bun test tests/infrastructure-discovery.test.ts",
+        "Manual: run discovery and verify it finds postgres (5432), redis (6379), ollama (11434)",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-PLAN-004"
+      ],
+      "milestone": "planner",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "artifact-generation",
+      "description": "Implement artifact generation in src/planner/artifact-gen.ts. Create generateMissionArtifacts(plan, targetDir, missionDir) that takes a structured plan (milestones, features, infrastructure, testing strategy) and generates ALL mission artifacts: (1) validation-contract.md with behavioral assertions organized by area, each with stable IDs, (2) validation-state.json initialized with all assertion IDs as pending, (3) features.json with all features having full schema, (4) AGENTS.md with mission boundaries and guidance, (5) services.yaml with commands and service definitions, (6) init.sh (idempotent setup script), (7) worker skill files at .pi-missions/skills/{type}/SKILL.md. The orchestrator calls this after plan approval. Each generated file must follow the exact format defined in the type system.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "core-types is complete",
+        "state-management is complete",
+        "planning-orchestrator is complete"
+      ],
+      "expectedBehavior": [
+        "Generates validation-contract.md with properly formatted assertions and stable IDs",
+        "Generates validation-state.json with all assertion IDs set to pending",
+        "Generates features.json with all required fields on every feature",
+        "Generates AGENTS.md with mission boundaries section",
+        "Generates services.yaml with commands section",
+        "Generates init.sh as idempotent bash script",
+        "Generates at least one worker skill file with YAML frontmatter and work procedure",
+        "All files are written atomically",
+        "Files are in the correct locations (mission dir vs project .pi-missions/)"
+      ],
+      "verificationSteps": [
+        "bun test tests/artifact-generation.test.ts",
+        "Manual: generate artifacts from a sample plan and verify all files exist with correct content",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-PLAN-005",
+        "VAL-PLAN-006",
+        "VAL-PLAN-007",
+        "VAL-PLAN-008",
+        "VAL-PLAN-010"
+      ],
+      "milestone": "planner",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "plan-review",
+      "description": "Implement the plan review flow in the planning orchestrator. Add a reviewPlan custom tool that presents a structured mission proposal to the user (plan overview, milestones with descriptions, feature list, infrastructure, testing strategy) and accepts approve/reject/revise responses. On approval, call generateMissionArtifacts(). On rejection, the orchestrator revises the plan based on user feedback and re-presents. On revision requests, update specific sections. The proposal should be formatted as readable markdown. Integrate this into the orchestrator's conversation flow as the final step after milestones are confirmed.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "planning-orchestrator is complete",
+        "artifact-generation is complete"
+      ],
+      "expectedBehavior": [
+        "Presents a structured proposal with all sections",
+        "User can approve (triggers artifact generation)",
+        "User can reject with feedback (orchestrator revises and re-presents)",
+        "Proposal is formatted as readable markdown",
+        "After approval, all artifacts are generated and the planner signals completion"
+      ],
+      "verificationSteps": [
+        "bun test tests/plan-review.test.ts",
+        "Manual: run through a full planning session and approve/reject the plan",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-PLAN-009"
+      ],
+      "milestone": "planner",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "misc-foundation-quality-fixes",
+      "description": "Fix non-blocking code quality issues from foundation scrutiny. (1) In src/types/handoff.ts: createEmptyHandoffResult() returns empty strings that violate TypeBox schema minLength constraints (20 and 50 chars) - fill with placeholder text or remove minLength constraints. (2) In src/types/mission.ts: Feature.handoff is typed as 'unknown' - change to HandoffResult|null. (3) Add 'yaml' as an explicit dependency in package.json (currently resolved via transitive hoisting). (4) In src/state/mission-state.ts: rename updateAssertionStatus to avoid naming collision with src/types/validation.ts function of the same name. (5) In tsconfig.json: remove empty 'paths: {}' field since it has no effect. Verify: bun test, bun run check, bun run lint all pass.",
+      "skillName": "dev-worker",
+      "preconditions": [],
+      "expectedBehavior": [
+        "createEmptyHandoffResult() returns valid values per schema constraints",
+        "Feature.handoff is typed as HandoffResult|null",
+        "yaml listed in package.json dependencies",
+        "No naming collision on updateAssertionStatus",
+        "tsconfig.json has no empty paths field",
+        "All existing tests still pass"
+      ],
+      "verificationSteps": [
+        "bun test --timeout 120000",
+        "bun run check",
+        "bun run lint"
+      ],
+      "fulfills": [],
+      "milestone": "misc-1",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "mission-runner",
+      "description": "Implement the mission runner in src/executor/mission-runner.ts. Create MissionRunner class with run(missionDir) method that: (1) reads features.json, (2) finds the next pending feature via getNextPendingFeature(), (3) updates feature status to 'in_progress', (4) spawns a worker session (delegates to worker-spawn.ts), (5) collects the handoff result, (6) updates feature status to 'completed' (or 'failed'), (7) moves completed features to bottom, (8) checks for milestone boundary (isMilestoneComplete), (9) if milestone boundary, emits 'milestone_complete' event, (10) repeats until no pending features. The runner should emit events (feature_start, feature_complete, feature_failed, milestone_complete, run_complete) via an EventEmitter or callback pattern. Implement sealed milestone enforcement: never allow adding features to a milestone that has been validated.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "state-management is complete",
+        "feature-ordering is complete",
+        "session-factory is complete"
+      ],
+      "expectedBehavior": [
+        "Runner picks features in array order (first pending)",
+        "Feature transitions: pending -> in_progress -> completed/failed",
+        "Completed features move to bottom of array",
+        "Milestone boundary is detected when all features in a milestone are done",
+        "Events are emitted for feature_start, feature_complete, feature_failed, milestone_complete, run_complete",
+        "Sealed milestones reject new feature additions",
+        "Runner handles empty feature list gracefully",
+        "State is persisted after each feature completes"
+      ],
+      "verificationSteps": [
+        "bun test tests/mission-runner.test.ts",
+        "bun test",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-EXEC-001",
+        "VAL-EXEC-004",
+        "VAL-EXEC-008",
+        "VAL-EXEC-012"
+      ],
+      "milestone": "executor",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "worker-spawning",
+      "description": "Implement worker session spawning in src/executor/worker-spawn.ts. Create spawnWorker(feature, missionDir, config) that: (1) reads the skill file for the feature's skillName from .pi-missions/skills/{skillName}/SKILL.md, (2) builds the worker system prompt using buildWorkerPrompt (includes feature description, expectedBehavior, verificationSteps, and skill content), (3) runs init.sh if present (via bash), (4) creates an agent session via createWorkerSession with the built prompt and standard tool set (read, write, edit, bash, grep, find, ls), (5) prompts the session with the task, (6) waits for the submit_result tool call, (7) parses and returns the HandoffResult. The worker prompt should clearly instruct the agent to follow TDD, verify its work, and use submit_result to return the handoff.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "session-factory is complete",
+        "core-types is complete"
+      ],
+      "expectedBehavior": [
+        "Reads skill file content and includes it in the system prompt",
+        "Runs init.sh before starting the worker task",
+        "Creates session with correct tools (read, write, edit, bash, grep, find, ls)",
+        "System prompt includes feature description, expectedBehavior, verificationSteps",
+        "Worker returns a valid HandoffResult via submit_result",
+        "Handles init.sh failure (reports error, does not proceed)",
+        "Handles missing skill file gracefully (uses default prompt)"
+      ],
+      "verificationSteps": [
+        "bun test tests/worker-spawning.test.ts",
+        "Manual: spawn a worker for a simple feature and verify it receives the correct prompt",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-EXEC-002",
+        "VAL-EXEC-011"
+      ],
+      "milestone": "executor",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "handoff-processing",
+      "description": "Implement handoff processing in src/executor/handoff.ts. Create processHandoff(handoff, feature, missionDir) that: (1) parses the HandoffResult, (2) if whatWasLeftUndone is non-empty, creates a fix feature with id 'fix-{original-id}' and inserts it at the top of the pending features array, (3) if discoveredIssues has items with severity 'high' or 'critical', creates fix features for each, (4) stores the handoff in the mission dir as handoffs/{feature-id}.json, (5) returns a summary of actions taken (features created, issues logged). Also create saveHandoff(missionDir, featureId, handoff) and loadHandoff(missionDir, featureId) for persistence.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "core-types is complete",
+        "state-management is complete"
+      ],
+      "expectedBehavior": [
+        "Parses HandoffResult correctly",
+        "Creates fix features for incomplete work (whatWasLeftUndone non-empty)",
+        "Creates fix features for high/critical discoveredIssues",
+        "Fix features are inserted at the top of the pending features array",
+        "Handoff is saved to handoffs/{feature-id}.json",
+        "Returns a summary of actions taken",
+        "Handles empty handoff fields gracefully"
+      ],
+      "verificationSteps": [
+        "bun test tests/handoff-processing.test.ts",
+        "bun test",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-EXEC-003",
+        "VAL-EXEC-005"
+      ],
+      "milestone": "executor",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "intervention-system",
+      "description": "Implement the intervention system in src/executor/intervention.ts. Create InterventionManager that: (1) supports pause() which sets a flag that the mission runner checks between features, (2) supports resume() which clears the flag, (3) supports steer(message) which sends a user message to the orchestrator session to redirect the mission (e.g., add/remove features, change priority), (4) processes steering responses by updating features.json accordingly. The mission runner should check isPaused() between each feature and wait if paused. Steering messages are processed by re-prompting the orchestrator agent with the user's message, and the orchestrator can call tools to modify the feature list.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "mission-runner is complete",
+        "planning-orchestrator is complete"
+      ],
+      "expectedBehavior": [
+        "pause() stops the runner after the current feature completes",
+        "resume() allows the runner to continue",
+        "steer(message) sends the message to the orchestrator for processing",
+        "Orchestrator can modify features.json in response to steering",
+        "Mission runner checks isPaused() between features",
+        "Steering messages can add new features, skip features, or change priority"
+      ],
+      "verificationSteps": [
+        "bun test tests/intervention.test.ts",
+        "Manual: start a mission, pause it, resume it, send a steering message",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-EXEC-007"
+      ],
+      "milestone": "executor",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "error-recovery",
+      "description": "Implement error recovery in the mission runner and worker spawning. Add to mission-runner.ts: (1) try/catch around spawnWorker that catches LLM API errors, timeout errors, and crashes, (2) on error, retry once with a fresh session, (3) if retry fails, mark feature as 'failed' with error details, (4) continue to next feature (don't stop the mission), (5) log errors with descriptive messages. Add error details to the Feature type: errorMessage?: string, errorAt?: string (ISO timestamp). Ensure that a failed worker session is properly cleaned up (session.dispose()). Test with simulated errors (e.g., invalid model name to trigger API error).",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "mission-runner is complete",
+        "worker-spawning is complete"
+      ],
+      "expectedBehavior": [
+        "LLM API errors are caught and retried once",
+        "If retry fails, feature is marked 'failed' with errorMessage",
+        "Runner continues to next feature after failure",
+        "Failed sessions are properly disposed",
+        "Error details (message, timestamp) are stored on the feature",
+        "Descriptive error messages are logged (not raw stack traces)"
+      ],
+      "verificationSteps": [
+        "bun test tests/error-recovery.test.ts",
+        "Manual: trigger an error (e.g., invalid model) and verify recovery behavior",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-EXEC-010"
+      ],
+      "milestone": "executor",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "scrutiny-validator",
+      "description": "Implement the scrutiny validator in src/validators/scrutiny.ts. Create ScrutinyValidator class with validate(milestone, missionDir) that: (1) reads services.yaml to get test/lint/check commands, (2) runs the test command and captures output + exit code, (3) runs the lint command and captures output + exit code, (4) runs the typecheck command and captures output + exit code, (5) if any command fails, return failure with output details, (6) if all pass, spawn a review subagent session for each completed feature in this milestone that examines the code changes (via git diff) and reports findings with severity levels, (7) write synthesis report to .pi-missions/validation/{milestone}/scrutiny/synthesis.json. The review subagent uses a system prompt focused on code review (bugs, security, quality).",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "session-factory is complete",
+        "state-management is complete",
+        "mission-runner is complete"
+      ],
+      "expectedBehavior": [
+        "Runs test command from services.yaml and reports results",
+        "Runs lint command and reports results",
+        "Runs typecheck command and reports results",
+        "Failures in any command cause the validator to fail",
+        "On all commands passing, spawns review subagents per feature",
+        "Review subagents examine git diff and report findings with severity",
+        "Synthesis report written to correct path with structured JSON",
+        "Review findings include file paths, line numbers, severity, description"
+      ],
+      "verificationSteps": [
+        "bun test tests/scrutiny-validator.test.ts",
+        "Manual: run scrutiny on the current project and verify it runs tests/lint/check",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-VAL-001",
+        "VAL-VAL-002",
+        "VAL-VAL-003",
+        "VAL-VAL-007"
+      ],
+      "milestone": "validators",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "user-testing-validator",
+      "description": "Implement the user-testing validator in src/validators/user-testing.ts. Create UserTestingValidator class with validate(milestone, missionDir) that: (1) reads validation-contract.md and validation-state.json, (2) identifies which assertions are testable for this milestone by checking which features' 'fulfills' arrays reference them, (3) reads .factory/library/user-testing.md for testing surface info, (4) spawns flow-testing subagents that execute the evidence-gathering steps for each assertion (e.g., run commands, check file contents, verify output), (5) each subagent returns pass/fail/blocked with evidence pointers, (6) updates validation-state.json with results, (7) writes synthesis report to .pi-missions/validation/{milestone}/user-testing/synthesis.json. On re-run, only re-test assertions that previously failed or were blocked.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "session-factory is complete",
+        "state-management is complete",
+        "validation-contract.md and validation-state.json exist"
+      ],
+      "expectedBehavior": [
+        "Reads validation contract and identifies testable assertions for the milestone",
+        "Spawns subagents to test assertions",
+        "Each subagent returns pass/fail/blocked with evidence",
+        "validation-state.json is updated with results",
+        "Synthesis report is written with structured findings",
+        "On re-run, only re-tests failed/blocked assertions (not already passed ones)",
+        "Handles assertions that can't be tested (marks as 'blocked' with reason)"
+      ],
+      "verificationSteps": [
+        "bun test tests/user-testing-validator.test.ts",
+        "Manual: run user-testing validator and verify it tests assertions",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-VAL-004",
+        "VAL-VAL-005"
+      ],
+      "milestone": "validators",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "validation-injection",
+      "description": "Implement auto-injection of validation features in src/validators/injection.ts. Create injectValidationFeatures(features, milestone) that: (1) creates a scrutiny-validator feature with id 'scrutiny-{milestone}' and milestone set to the same milestone, (2) creates a user-testing-validator feature with id 'user-testing-{milestone}', (3) inserts both AFTER the last implementation feature of that milestone but BEFORE features of the next milestone. The mission runner calls this when it detects a milestone boundary. Also implement the re-run logic: when a validator fails and fix features are created, the validator feature goes back to 'pending' so it re-runs after the fixes. On re-run, validators should read their previous synthesis report to know what to re-check.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "mission-runner is complete",
+        "scrutiny-validator is complete",
+        "user-testing-validator is complete"
+      ],
+      "expectedBehavior": [
+        "Injects scrutiny and user-testing features at milestone boundaries",
+        "Injected features are positioned after implementation features, before next milestone",
+        "On validator failure, validator feature goes back to pending",
+        "Re-run validators only re-check what previously failed",
+        "Validators are not re-injected if they already exist for a milestone"
+      ],
+      "verificationSteps": [
+        "bun test tests/validation-injection.test.ts",
+        "bun test",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-VAL-006"
+      ],
+      "milestone": "validators",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "mission-control-view",
+      "description": "Implement the mission control TUI view in src/tui/mission-control.ts using pi-tui. Create a MissionControlView component (extending pi-tui's Container or Component) that displays: (1) a header with mission name and status, (2) a feature list panel showing all features with status indicators (checkmark for completed, X for failed, spinner for in_progress, dash for pending), (3) milestone progress showing 'N/M features complete' per milestone, (4) a main content area for worker output. Use pi-tui's retained-mode rendering. Status indicators should use ANSI colors (green for completed, red for failed, yellow for in_progress, gray for pending) and distinct characters. The view should update when features change status.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "core-types is complete",
+        "@oh-my-pi/pi-tui is available via pi-coding-agent"
+      ],
+      "expectedBehavior": [
+        "Displays mission name and overall status in header",
+        "Shows feature list with colored status indicators",
+        "Shows milestone progress (N/M format)",
+        "Main content area renders worker output",
+        "View updates when feature status changes",
+        "Uses ANSI colors for status differentiation",
+        "Uses distinct characters for different statuses (checkmark, X, spinner, dash)"
+      ],
+      "verificationSteps": [
+        "bun test tests/mission-control-view.test.ts",
+        "Manual: render the view with sample data and verify layout",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-TUI-001",
+        "VAL-TUI-004"
+      ],
+      "milestone": "tui",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "planning-chat-ui",
+      "description": "Implement the planning conversation UI in src/tui/planning-chat.ts using pi-tui. Create a PlanningChatView that provides: (1) a scrollable conversation area showing user and orchestrator messages, (2) orchestrator messages rendered as Markdown (using pi-tui's Markdown component for syntax highlighting, bold, lists), (3) a text input editor at the bottom (using pi-tui's Editor component with multi-line support), (4) onSubmit handler that sends the user's message to the orchestrator session, (5) streaming orchestrator responses (text appears incrementally as the LLM streams). Wire this to the planning orchestrator session's event system.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "planning-orchestrator is complete",
+        "@oh-my-pi/pi-tui is available"
+      ],
+      "expectedBehavior": [
+        "Displays back-and-forth conversation messages",
+        "Orchestrator messages render with Markdown formatting",
+        "Text input supports multi-line and submit",
+        "Orchestrator responses stream incrementally",
+        "Conversation scrolls naturally as new messages appear"
+      ],
+      "verificationSteps": [
+        "bun test tests/planning-chat-ui.test.ts",
+        "Manual: run the planning chat and have a multi-turn conversation",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-TUI-003"
+      ],
+      "milestone": "tui",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "worker-stream-display",
+      "description": "Implement worker output streaming in src/tui/worker-stream.ts using pi-tui. Create a WorkerStreamView that: (1) subscribes to the current worker session's events, (2) on message_update with text_delta, appends text incrementally to a Markdown component, (3) on tool_execution_start, shows a tool indicator line with tool name and key arguments (dimmed/gray), (4) on tool_execution_end, shows the result status (OK/ERROR), (5) clears the stream area when a new worker starts. This component is placed in the main content area of MissionControlView during execution.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "mission-control-view is complete",
+        "worker-spawning is complete"
+      ],
+      "expectedBehavior": [
+        "Text deltas render incrementally (character by character)",
+        "Tool calls show tool name and key arguments",
+        "Tool results show OK/ERROR status",
+        "Stream area clears between features",
+        "Rendering is flicker-free (uses pi-tui's differential rendering)"
+      ],
+      "verificationSteps": [
+        "bun test tests/worker-stream-display.test.ts",
+        "Manual: run a worker and verify streaming output in TUI",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-TUI-002"
+      ],
+      "milestone": "tui",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "user-controls",
+      "description": "Implement user controls in src/tui/status.ts. Create a StatusDashboard component that: (1) shows a bottom bar with keyboard shortcuts (e.g., 'Ctrl+P: Pause/Resume', 'Ctrl+S: Steer', 'Ctrl+Q: Quit'), (2) handles Ctrl+P to toggle pause/resume via InterventionManager, (3) handles Ctrl+S to open a text input for sending steering messages, (4) shows current state (Running/Paused/Completed) in the status bar. Wire keyboard handlers to the TUI's input handling. The steering input should overlay the main content area and send the message to the orchestrator when submitted.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "mission-control-view is complete",
+        "intervention-system is complete"
+      ],
+      "expectedBehavior": [
+        "Status bar shows keyboard shortcuts",
+        "Ctrl+P toggles pause/resume",
+        "Ctrl+S opens steering input overlay",
+        "Steering message is sent to orchestrator on submit",
+        "Status bar shows current state (Running/Paused/Completed)",
+        "Ctrl+Q exits the application cleanly"
+      ],
+      "verificationSteps": [
+        "bun test tests/user-controls.test.ts",
+        "Manual: use keyboard shortcuts to pause, resume, and steer during execution",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-TUI-005"
+      ],
+      "milestone": "tui",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "cli-entry-point",
+      "description": "Implement the CLI entry point in src/index.ts. Use a simple command parser (or lightweight library like 'citty' or manual process.argv parsing) to handle subcommands: (1) 'new' - creates a new mission: initializes git if needed, creates .pi-missions/ directory, enters planning flow via PlanningChatView, (2) 'resume' - loads existing mission from .pi-missions/, enters MissionControlView, continues execution, (3) 'status' - reads .pi-missions/features.json and validation-state.json, prints summary (feature counts by status, current milestone, validation progress), (4) 'list' - reads .pi-missions/ directories to find missions, prints table with creation date, status, feature count, (5) '--help' - prints usage info. Add a 'bin' field to package.json pointing to src/index.ts so 'bun run pi-missions' works. Each command should handle errors gracefully (e.g., 'resume' when no mission exists).",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "All TUI components are complete",
+        "mission-runner is complete",
+        "planning-orchestrator is complete",
+        "state-management is complete"
+      ],
+      "expectedBehavior": [
+        "'pi-missions new' starts planning flow in TUI",
+        "'pi-missions resume' loads and continues existing mission",
+        "'pi-missions status' prints mission summary",
+        "'pi-missions list' shows all missions",
+        "'pi-missions --help' prints usage",
+        "'pi-missions resume' with no mission shows clear error",
+        "Git repo is initialized if not present when running 'new'",
+        "bin field in package.json enables 'bun run pi-missions'"
+      ],
+      "verificationSteps": [
+        "bun run src/index.ts --help",
+        "bun run src/index.ts status (with and without existing mission)",
+        "bun test tests/cli.test.ts",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-CLI-001",
+        "VAL-CLI-002",
+        "VAL-CLI-003",
+        "VAL-CLI-004"
+      ],
+      "milestone": "cli",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "setup-wizard",
+      "description": "Implement the setup wizard in src/config/credentials.ts and wire it to the 'setup' CLI command. Create a SetupWizard that: (1) prompts user to select an LLM provider (Anthropic, OpenAI, Google, Groq, etc.) via interactive menu, (2) prompts for the API key (input is masked with asterisks), (3) validates the key by making a test call (e.g., simple completion with 'say hello'), (4) if valid, saves to .pi-missions/credentials.json (encrypted or obfuscated, NOT plaintext), (5) if invalid, shows clear error and lets user retry, (6) adds .pi-missions/credentials.json to .gitignore, (7) optionally configures default model and thinking level. The API key must NEVER be printed to terminal output or written to any log file. Use oh-my-pi's AuthStorage for credential persistence where possible.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "session-factory is complete",
+        "config-system is complete"
+      ],
+      "expectedBehavior": [
+        "Interactive provider selection menu",
+        "API key input is masked (not visible in terminal)",
+        "Key is validated via a test LLM call",
+        "Valid key is persisted securely",
+        "Invalid key shows clear error message, allows retry",
+        ".pi-missions/credentials.json is in .gitignore",
+        "API key never appears in terminal output or logs",
+        "bun install succeeds (as part of project setup verification)"
+      ],
+      "verificationSteps": [
+        "bun test tests/setup-wizard.test.ts",
+        "Manual: run 'pi-missions setup' and configure a key",
+        "grep -r 'sk-' .pi-missions/ logs/ (verify key not in plaintext)",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-SETUP-001",
+        "VAL-SETUP-002",
+        "VAL-SETUP-004",
+        "VAL-CLI-005",
+        "VAL-SEC-001"
+      ],
+      "milestone": "cli",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "e2e-smoke-test",
+      "description": "Create an end-to-end smoke test in tests/e2e.test.ts that exercises the full mission lifecycle. The test should: (1) create a temporary directory, (2) initialize a new mission programmatically (bypass TUI, use API directly), (3) provide a simple plan: 'create a file called hello.txt with the content Hello World', (4) execute the mission (one feature, one milestone), (5) verify the feature completed, (6) verify validation ran, (7) verify hello.txt exists with correct content, (8) test resume by creating a 2-feature mission, completing one, 'pausing', then resuming and verifying the second completes, (9) test validation failure recovery. This test uses REAL LLM calls so set timeout to 300+ seconds. Also test the cross-area flows: planning-to-execution handoff, multi-milestone progression, init.sh execution, completion summary.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "All previous milestones complete",
+        "LLM API key is configured"
+      ],
+      "expectedBehavior": [
+        "Full lifecycle test passes: plan -> execute -> validate -> complete",
+        "Resume test passes: pause mid-mission, resume, complete",
+        "Validation failure test: validator fails, fix feature created, re-run passes",
+        "Planning to execution handoff works smoothly",
+        "Multi-milestone progression works with validation between milestones",
+        "Init.sh runs before worker execution",
+        "Completion summary is displayed with statistics"
+      ],
+      "verificationSteps": [
+        "bun test tests/e2e.test.ts --timeout 600000",
+        "bun test (full suite)",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-CROSS-001",
+        "VAL-CROSS-002",
+        "VAL-CROSS-003",
+        "VAL-CROSS-004",
+        "VAL-CROSS-005",
+        "VAL-CROSS-006",
+        "VAL-CROSS-007"
+      ],
+      "milestone": "cli",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "readme-docs",
+      "description": "Create a comprehensive README.md at the project root. Include: (1) project name and description (Pi Missions - autonomous code development orchestrator built on oh-my-pi), (2) installation instructions (bun install, bun link for global CLI), (3) quick start guide (setup wizard, create a mission, watch it execute), (4) CLI reference (all subcommands with examples), (5) architecture overview (how the planner, executor, validators, and TUI work together), (6) configuration reference (.pi-missions/config.json fields), (7) how it compares to Droid Missions (inspiration and differences), (8) development guide (how to build, test, contribute). Keep it concise but thorough.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "All features are complete"
+      ],
+      "expectedBehavior": [
+        "README.md exists at project root",
+        "Contains installation instructions",
+        "Contains quick start guide",
+        "Contains CLI reference",
+        "Contains architecture overview",
+        "Is well-formatted Markdown"
+      ],
+      "verificationSteps": [
+        "cat README.md (verify content)",
+        "bun run check"
+      ],
+      "fulfills": [],
+      "milestone": "cli",
+      "status": "pending",
+      "workerSessionIds": [],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "project-scaffold",
+      "description": "Initialize the Pi Missions project: create git repo, bun project (package.json with @oh-my-pi/pi-coding-agent dependency), tsconfig.json (strict mode, ES2022 target, bundler module resolution), biome.json for linting, and the source directory structure (src/ with subdirectories: types, state, config, session, planner, executor, validators, tui, utils; plus tests/ directory). Add scripts to package.json: 'check' for typecheck, 'lint' for biome lint, 'build' for bun build. Create a minimal src/index.ts that prints 'pi-missions v0.1.0'.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "Bun 1.3.5+ is installed",
+        "Working directory is /Users/johnross/Documents/Software_Projects/Pi Missions"
+      ],
+      "expectedBehavior": [
+        "package.json exists with @oh-my-pi/pi-coding-agent as dependency",
+        "tsconfig.json exists with strict mode enabled",
+        "biome.json exists with reasonable defaults",
+        "src/ directory exists with subdirectories: types, state, config, session, planner, executor, validators, tui, utils",
+        "tests/ directory exists",
+        "bun install succeeds without errors",
+        "bun run src/index.ts prints version info",
+        "bun run check succeeds (no type errors)",
+        "bun run lint succeeds"
+      ],
+      "verificationSteps": [
+        "bun install",
+        "bun run src/index.ts",
+        "bun run check",
+        "bun run lint"
+      ],
+      "fulfills": [],
+      "milestone": "foundation",
+      "status": "completed",
+      "workerSessionIds": [
+        "5b22f9d8-0b6b-48ec-b853-3d378e5c7ef6"
+      ],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": "5b22f9d8-0b6b-48ec-b853-3d378e5c7ef6"
+    },
+    {
+      "id": "core-types",
+      "description": "Define TypeScript type definitions in src/types/. Create mission.ts with: Mission (id, title, description, status, milestones, createdAt, updatedAt), Feature (id, description, skillName, milestone, preconditions, expectedBehavior, verificationSteps, fulfills, status, handoff?), Milestone (name, description, features, sealed), FeatureStatus ('pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'), MissionStatus ('planning' | 'executing' | 'completed' | 'paused'). Create handoff.ts with: HandoffResult (salientSummary, whatWasImplemented, whatWasLeftUndone, verification, tests, discoveredIssues), VerificationResult, TestResult, DiscoveredIssue. Create validation.ts with: ValidationContract (assertions organized by area), ValidationAssertion (id, title, description, evidence), ValidationState (assertions map of id to status/evidence). Create index.ts barrel export. All types should use TypeBox schemas where they'll be used as tool parameters.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "project-scaffold is complete",
+        "@oh-my-pi/pi-coding-agent is installed (provides @sinclair/typebox)"
+      ],
+      "expectedBehavior": [
+        "src/types/mission.ts exports Mission, Feature, Milestone, FeatureStatus, MissionStatus types",
+        "src/types/handoff.ts exports HandoffResult, VerificationResult, TestResult, DiscoveredIssue types",
+        "src/types/validation.ts exports ValidationContract, ValidationAssertion, ValidationState types",
+        "src/types/index.ts re-exports all types",
+        "TypeBox schemas are defined for HandoffResult (used as worker output schema)",
+        "All types compile without errors"
+      ],
+      "verificationSteps": [
+        "bun run check (no type errors)",
+        "Import types in a test file and verify they're usable"
+      ],
+      "fulfills": [],
+      "milestone": "foundation",
+      "status": "completed",
+      "workerSessionIds": [
+        "54d94cc4-def2-483b-9ac5-062b8f0a0914",
+        "27526ad5-c696-480d-8f17-8c66aff77256"
+      ],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "state-management",
+      "description": "Implement state management in src/state/. Create atomic-write.ts with atomicWriteFile(path, content) that writes to a .tmp file then renames. Create features.ts with readFeatures(dir), writeFeatures(dir, features), updateFeatureStatus(dir, featureId, status), getNextPendingFeature(features), moveCompletedToBottom(features), addFixFeature(dir, fixFeature). Create mission-state.ts with readMissionState(dir), writeMissionState(dir, state), readValidationState(dir), writeValidationState(dir, state), updateAssertionStatus(dir, assertionId, status, evidence?). Create services.ts with readServicesYaml(dir), writeServicesYaml(dir, services). All write operations MUST use atomicWriteFile. Include tests for atomic write behavior, feature ordering, and state transitions.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "core-types is complete"
+      ],
+      "expectedBehavior": [
+        "atomicWriteFile writes to .tmp then renames (verified by checking no .tmp files remain)",
+        "readFeatures/writeFeatures correctly serialize/deserialize features.json",
+        "updateFeatureStatus changes a specific feature's status",
+        "getNextPendingFeature returns the first feature with status 'pending'",
+        "moveCompletedToBottom reorders the array so completed features are at the end",
+        "addFixFeature inserts a new feature at the top of the array",
+        "readValidationState/writeValidationState handle validation-state.json",
+        "updateAssertionStatus updates a specific assertion's status",
+        "All operations are atomic (no partial writes on crash)"
+      ],
+      "verificationSteps": [
+        "bun test tests/state-management.test.ts",
+        "bun test (full suite)",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-SEC-002"
+      ],
+      "milestone": "foundation",
+      "status": "completed",
+      "workerSessionIds": [
+        "b52a0129-5828-4838-9472-391184e5afe5"
+      ],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "session-factory",
+      "description": "Implement the shared session factory in src/session/. Create factory.ts that initializes shared authStorage and modelRegistry once (via discoverAuthStorage() and new ModelRegistry()), and exports createWorkerSession(config) and createOrchestratorSession(config) functions. createWorkerSession uses SessionManager.inMemory(), sets requireSubmitResultTool: true with the HandoffResult TypeBox schema as outputSchema, disables MCP and LSP, and accepts a system prompt + tool names + model. createOrchestratorSession uses SessionManager.create() for persistence, accepts custom tools and system prompt. Create prompts.ts with buildWorkerPrompt(feature, skill) that constructs a system prompt including the feature description, expectedBehavior, verificationSteps, and skill content. Also buildValidatorPrompt(milestone, type) for scrutiny/user-testing validators.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "core-types is complete",
+        "@oh-my-pi/pi-coding-agent is installed"
+      ],
+      "expectedBehavior": [
+        "createWorkerSession creates an ephemeral session with inMemory SessionManager",
+        "Worker sessions have requireSubmitResultTool: true and the handoff outputSchema",
+        "Worker sessions have MCP and LSP disabled",
+        "createOrchestratorSession creates a persistent session",
+        "buildWorkerPrompt includes feature description, expectedBehavior, and skill content",
+        "Both functions accept a model parameter",
+        "Shared authStorage/modelRegistry are initialized once and reused"
+      ],
+      "verificationSteps": [
+        "bun test tests/session-factory.test.ts",
+        "bun run check"
+      ],
+      "fulfills": [],
+      "milestone": "foundation",
+      "status": "completed",
+      "workerSessionIds": [
+        "99cb211a-f692-434a-ad7a-b2a53b6e8384"
+      ],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "feature-ordering",
+      "description": "Implement feature ordering logic in src/executor/ or src/state/. Add functions: getFeaturesByMilestone(features, milestone) returns features for a given milestone, getMilestoneOrder(features) returns ordered list of unique milestone names, isMilestoneComplete(features, milestone) returns true if all features in that milestone are completed/cancelled, getNextMilestone(features) returns the first milestone that has pending features, getSealedMilestones(features) returns milestones where all features are completed AND validation has passed. These are pure functions operating on the Feature[] array. Include comprehensive tests.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "core-types is complete",
+        "state-management is complete"
+      ],
+      "expectedBehavior": [
+        "getFeaturesByMilestone filters features correctly",
+        "getMilestoneOrder returns milestones in the order they first appear in the features array",
+        "isMilestoneComplete returns true only when ALL features in milestone are completed or cancelled",
+        "getNextMilestone returns the first milestone with pending features",
+        "getSealedMilestones correctly identifies fully validated milestones",
+        "Functions handle edge cases: empty arrays, single feature, all completed"
+      ],
+      "verificationSteps": [
+        "bun test tests/feature-ordering.test.ts",
+        "bun test",
+        "bun run check"
+      ],
+      "fulfills": [],
+      "milestone": "foundation",
+      "status": "completed",
+      "workerSessionIds": [
+        "7b84a8ac-c0b1-4e1c-856b-99ad31731cb6",
+        "62f4ef51-d5b2-4a0c-9ae8-e6bd8b8ba140",
+        "1dbd9864-468a-4150-9889-febe0d951f7b",
+        "43f18a2b-f319-407c-8003-64f228437924"
+      ],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": null
+    },
+    {
+      "id": "config-system",
+      "description": "Implement configuration loading in src/config/. Create config.ts that loads .pi-missions/config.json with fields: defaultModel (string, e.g. 'anthropic:claude-sonnet-4-5'), defaultThinkingLevel (string), missionDir (string path to mission artifacts). Provide sensible defaults when config file is absent. Create agents-md.ts that discovers and loads AGENTS.md files (project root, .pi-missions/, home dir) following oh-my-pi's hierarchical discovery pattern. Create a simple git.ts in src/utils/ with gitInit(dir), gitCommit(dir, message), gitStatus(dir), gitDiff(dir) wrappers around shell commands. Include tests that verify config loading with and without a config file, and AGENTS.md discovery.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "project-scaffold is complete"
+      ],
+      "expectedBehavior": [
+        "Config loads from .pi-missions/config.json when present",
+        "Sensible defaults are used when config file is absent",
+        "Invalid config values produce clear error messages (not crashes)",
+        "AGENTS.md files are discovered hierarchically and concatenated",
+        "Git helpers work correctly (init, commit, status, diff)",
+        "Config type is properly typed with defaults"
+      ],
+      "verificationSteps": [
+        "bun test tests/config.test.ts",
+        "bun test",
+        "bun run check"
+      ],
+      "fulfills": [
+        "VAL-SETUP-003"
+      ],
+      "milestone": "foundation",
+      "status": "completed",
+      "workerSessionIds": [
+        "0d69990f-dc55-4e9f-a749-31851a2f8313"
+      ],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": "0d69990f-dc55-4e9f-a749-31851a2f8313"
+    },
+    {
+      "id": "fix-foundation-typecheck-lint",
+      "description": "Fix typecheck and lint errors blocking foundation scrutiny validation. Run bun run check and bun run lint to see all errors, then fix each one. Key issues: (1) tests/session-factory.test.ts uses getModel which does not exist on pi-ai exports - grep node_modules to find correct API, (2) Bun.makeTempDir does not exist - use mkdtempSync from node:fs, (3) noUnusedTemplateLiteral in tests, (4) unused imports/variables across multiple files. After fixing: bun test, bun run check, bun run lint must all pass.",
+      "skillName": "dev-worker",
+      "preconditions": [],
+      "expectedBehavior": [
+        "bun run check exits 0 (no type errors in src/ or tests/)",
+        "bun run lint exits 0 (no errors, no warnings)",
+        "bun test --timeout 120000 still passes all tests",
+        "No functional changes to existing code - only import/variable fixes"
+      ],
+      "verificationSteps": [
+        "bun run check",
+        "bun run lint",
+        "bun test --timeout 120000"
+      ],
+      "fulfills": [],
+      "milestone": "foundation",
+      "status": "completed",
+      "workerSessionIds": [
+        "b666f93d-c1fa-4371-805c-b7c13e606e72",
+        "7fe365c8-a160-472d-b8d0-b454609d1606",
+        "aab0e450-8688-45c8-8923-f0258e08bd3f",
+        "56543ecc-3cb4-46a1-bac2-e98ed359b76a",
+        "ce2356d1-2369-4a3b-bddc-9d14eac8f3ce",
+        "e980d3f7-30f5-4cce-beba-54501d7255e4"
+      ],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": "subagent-task"
+    },
+    {
+      "id": "fix-foundation-missing-tests",
+      "description": "Create missing test files for state-management and feature-ordering features, and fix the barrel export. Three tasks: (1) Create tests/state-management.test.ts covering atomicWriteFile (write-to-tmp-then-rename), readFeatures/writeFeatures (round-trip), updateFeatureStatus (status transitions), readMissionState/writeMissionState, readValidationState/writeValidationState, readServicesYaml/writeServicesYaml. (2) Create tests/feature-ordering.test.ts covering getFeaturesByMilestone, getMilestoneOrder, isMilestoneComplete, getNextMilestone, getSealedMilestones, and edge cases (empty features, single milestone, all completed). (3) Add 'export * from \"./feature-ordering.js\";' to src/state/index.ts barrel file. Verify: bun test, bun run check, bun run lint all pass.",
+      "skillName": "dev-worker",
+      "preconditions": [
+        "state-management source files exist in src/state/",
+        "feature-ordering.ts exists in src/state/"
+      ],
+      "expectedBehavior": [
+        "tests/state-management.test.ts exists with 10+ tests covering all state module functions",
+        "tests/feature-ordering.test.ts exists with 8+ tests covering all ordering functions and edge cases",
+        "src/state/index.ts exports feature-ordering module",
+        "bun test passes (all new + existing tests)",
+        "bun run check exits 0",
+        "bun run lint exits 0"
+      ],
+      "verificationSteps": [
+        "bun test tests/state-management.test.ts",
+        "bun test tests/feature-ordering.test.ts",
+        "bun test --timeout 120000",
+        "bun run check",
+        "bun run lint"
+      ],
+      "fulfills": [],
+      "milestone": "foundation",
+      "status": "completed",
+      "workerSessionIds": [
+        "d5371a4f-d5e9-4037-88eb-e80667856b59"
+      ],
+      "currentWorkerSessionId": null,
+      "completedWorkerSessionId": "subagent-task"
+    }
+  ]
+}
