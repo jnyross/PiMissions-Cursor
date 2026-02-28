@@ -79,7 +79,7 @@ export class ScrutinyValidator {
 			commandResults.push(result);
 		}
 
-		const reportRoot = this.#reportRoot ?? join(missionDir, ".pi-missions", "validation");
+		const reportRoot = this.#reportRoot ?? join(missionDir, "validation");
 		const reportDir = join(reportRoot, milestone, "scrutiny");
 		await mkdir(reportDir, { recursive: true });
 		const reportPath = join(reportDir, "synthesis.json");

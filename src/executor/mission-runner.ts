@@ -59,6 +59,7 @@ export class MissionRunner extends EventEmitter {
 			}
 
 			await this.#interventionManager.waitIfPaused();
+			this.assertMilestoneNotSealed(nextFeature.milestone, sealedMilestones);
 			this.emitEvent({ type: "feature_start", feature: nextFeature });
 
 			await updateFeatureStatus(missionDir, nextFeature.id, "in_progress");
@@ -92,7 +93,6 @@ export class MissionRunner extends EventEmitter {
 				continue;
 			}
 
-			this.assertMilestoneNotSealed(nextFeature.milestone, sealedMilestones);
 			await this.#processHandoff(handoff, nextFeature, missionDir);
 
 			const completedFeatures = await updateFeatureStatus(missionDir, nextFeature.id, "completed", { handoff });

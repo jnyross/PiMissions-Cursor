@@ -33,14 +33,14 @@ async function loadSkillContent(targetDir: string, skillName: string): Promise<s
 	return await readFile(skillPath, "utf-8");
 }
 
-async function runInitScriptIfPresent(missionDir: string): Promise<void> {
+async function runInitScriptIfPresent(missionDir: string, targetDir: string): Promise<void> {
 	const initPath = join(missionDir, "init.sh");
 	if (!(await fileExists(initPath))) {
 		return;
 	}
 
 	const result = Bun.spawnSync(["bash", initPath], {
-		cwd: missionDir,
+		cwd: targetDir,
 		stdout: "pipe",
 		stderr: "pipe",
 	});
@@ -118,7 +118,7 @@ export async function spawnWorker(options: WorkerSpawnOptions): Promise<HandoffR
 	const skillContent = await loadSkillContent(targetDir, options.feature.skillName);
 	const workerPrompt = buildWorkerPrompt(options.feature, skillContent);
 
-	await runInitScriptIfPresent(options.missionDir);
+	await runInitScriptIfPresent(options.missionDir, targetDir);
 
 	const createSession = options.createSession ?? createWorkerSession;
 	const session = await createSession({
