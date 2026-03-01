@@ -1,6 +1,6 @@
 import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { buildWorkerPrompt, createWorkerSession } from "../session/index.js";
+import { type ThinkingLevel, buildWorkerPrompt, createWorkerSession } from "../session/index.js";
 import { type Feature, type HandoffResult, createEmptyHandoffResult } from "../types/index.js";
 
 export interface WorkerSpawnOptions {
@@ -8,6 +8,7 @@ export interface WorkerSpawnOptions {
 	missionDir: string;
 	targetDir?: string;
 	defaultModel?: string;
+	thinkingLevel?: ThinkingLevel;
 	model?: Parameters<typeof createWorkerSession>[0]["model"];
 	toolNames?: string[];
 	createSession?: typeof createWorkerSession;
@@ -61,7 +62,9 @@ function maybeParseHandoff(value: unknown): HandoffResult | null {
 		typeof candidate.whatWasImplemented === "string" &&
 		typeof candidate.whatWasLeftUndone === "string" &&
 		typeof candidate.verification === "object" &&
+		candidate.verification !== null &&
 		typeof candidate.tests === "object" &&
+		candidate.tests !== null &&
 		Array.isArray(candidate.discoveredIssues)
 	) {
 		return candidate as unknown as HandoffResult;
@@ -127,6 +130,7 @@ export async function spawnWorker(options: WorkerSpawnOptions): Promise<HandoffR
 		toolNames: options.toolNames ?? ["read", "write", "edit", "bash", "grep", "find", "ls"],
 		model: options.model,
 		defaultModel: options.defaultModel,
+		thinkingLevel: options.thinkingLevel,
 	});
 
 	try {

@@ -52,7 +52,10 @@ export async function updateFeatureStatus(
 }
 
 export function getNextPendingFeature(features: Feature[]): Feature | undefined {
-	return features.find((feature) => feature.status === "pending");
+	return (
+		features.find((feature) => feature.status === "in_progress") ??
+		features.find((feature) => feature.status === "pending")
+	);
 }
 
 export function moveCompletedToBottom(features: Feature[]): Feature[] {
