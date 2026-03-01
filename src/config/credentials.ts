@@ -150,8 +150,10 @@ async function defaultValidateApiKey(provider: string, apiKey: string): Promise<
 		});
 
 		try {
+			const timeoutMs = Number.parseInt(process.env.PI_MISSIONS_SETUP_VALIDATE_TIMEOUT_MS ?? "90000", 10);
+			const effectiveTimeout = Number.isNaN(timeoutMs) ? 90_000 : Math.max(5_000, timeoutMs);
 			const timeoutPromise = new Promise<never>((_resolve, reject) => {
-				setTimeout(() => reject(new Error("Validation call timed out.")), 20_000);
+				setTimeout(() => reject(new Error("Validation call timed out.")), effectiveTimeout);
 			});
 			await Promise.race([session.prompt("Reply with exactly: hello"), timeoutPromise]);
 		} finally {

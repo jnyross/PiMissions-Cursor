@@ -1,0 +1,23 @@
+{
+  "features": [
+    {
+      "id": "initial-task",
+      "description": "Implement the first planned slice from user goals.",
+      "skillName": "dev-worker",
+      "milestone": "foundation",
+      "preconditions": [],
+      "expectedBehavior": [
+        "Implements the requested behavior."
+      ],
+      "verificationSteps": [
+        "bun test --timeout 120000",
+        "bun run check",
+        "bun run lint"
+      ],
+      "fulfills": [
+        "VAL-PLAN-001"
+      ],
+      "status": "pending"
+    }
+  ]
+}
